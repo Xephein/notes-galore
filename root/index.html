@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kanban Board</title>
+    <link rel="stylesheet" href="./style/index.css">
+    <script src="./script/kanban_functionality.js"></script>
+    <script src="./script/test.js"></script>
+  </head>
+
+  <body>
+    <div id="kanban-board" name="board" class="kanban-board">
+
+      <div id="kanban-container-columns" name="columns" class="kanban-container-columns"></div>
+      
+      <div id="kanban-new-column" name="new-column">
+        <button onclick="addColumn()" class="add-button">+</button>
+      </div>
+      
+    </div>
+  </body>
+</html>
