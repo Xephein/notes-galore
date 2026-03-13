@@ -92,7 +92,7 @@ def sql_insert(table, columns, values, autocommit=False):
         "result": inserted
     }
 
-def sql_update(table, row_id, columns, values, autocommit=False):
+def sql_update(table, row_id, columns, values, autocommit=False, cur=None):
     if not isinstance(columns, list):
         columns = [columns]
     if not isinstance(values, list):
@@ -107,18 +107,46 @@ def sql_update(table, row_id, columns, values, autocommit=False):
     SET {",".join([column + " = ?" for column in columns])}
     WHERE id = ?"""
 
-    cursor = get_cur()
+    if cur:
+        cursor = cur
+    else:
+        cursor = get_cur()
+    
     cursor.execute(query, tuple(values))
 
     if autocommit:
         g.db.commit()
-
-    cursor.close()
+    
+    if cur is None:
+        cursor.close()
 
     return {
         "status": "ok",
         "result": row_id
     }
+
+def sql_updatemany(table, updates, autocommit=False):
+    cursor = get_cur()
+    for row in updates:
+        row_id = row.pop("id")
+        columns = list(row.keys())
+        values = list(row.values())
+        res = sql_update(table, row_id, columns, values, autocommit=False, cur=cursor)
+        if res["status"] != "ok":
+            res["info"] = f"row_id: {row_id}, columns: {columns}, values: {values}"
+            return res
+    
+    if autocommit:
+        g.db.commit()
+    
+    cursor.close()
+
+    return {
+        "status": "ok",
+    }
+
+    
+
 
 def sql_delete(table, col_id, autocommit=False):
     if not isinstance(col_id, tuple):
@@ -127,6 +155,7 @@ def sql_delete(table, col_id, autocommit=False):
     WHERE id = ?"""
 
     cursor = get_cur()
+    print(query)
     cursor.execute(query, col_id)
 
     if autocommit:

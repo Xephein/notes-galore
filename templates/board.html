@@ -22,7 +22,7 @@
             <div id="col-{{  column['id']  }}-container-cards" class="kanban-container-cards">
               {% for card in column['cards'] %}
               
-                <div id="card-{{ card['id']  }}" class="kanban-card draggable" draggable="true" data-order="{{  card['order']  }}">
+                <div id="card-{{ card['id']  }}" class="kanban-card draggable" draggable="true" data-position="{{  card['position']  }}">
                   <div id="card-{{  card['id']  }}-header" class="kanban-card-header">
                     <div class="kanban-card-grab">°°°</div>
                     <div class="delete-button kanban-button kanban-button-delete-card" data-parent="card-{{  card['id']  }}">×</div>
@@ -32,8 +32,8 @@
                 </div>
 
               {% endfor %}
-              <div class="add-button kanban-button kanban-button-create-card" data-parent="col-{{  column['id']  }}">+</div>
             </div>
+            <div class="add-button kanban-button kanban-button-create-card" data-parent="col-{{  column['id']  }}">+</div>
           </div>
 
         {% endfor %}
@@ -66,22 +66,34 @@
       query = document.querySelectorAll(".kanban-button-delete-column")
       query.forEach(button => {
         button.addEventListener("click", async function(e) {
-          id = e.currentTarget.getAttribute("data-parent")
-          document.getElementById(id).remove()
-          id = id.match("[0-9]+")[0]
+          col_id = e.currentTarget.getAttribute("data-parent")
+          id = col_id.match("[0-9]+")[0]
           body = {
-            status: "ok",
-            column_id: id
+            status: "ok"
           }
-          response = await request(window.location.pathname + "columns/", "DELETE", body)
-        });   
+          response = await request(window.location.pathname + "columns/" + id, "DELETE", body)
+
+          // if response okay then remove
+          document.getElementById(col_id).remove()
+        });
+        
       });
       
       // SCRIPT FOR DELETING CARDS
       query = document.querySelectorAll(".kanban-button-delete-card")
       query.forEach(button => {
-        button.addEventListener("click", function(e) {
-          document.getElementById(e.currentTarget.getAttribute("data-parent")).remove()
+        button.addEventListener("click", async function(e) {
+          card_id = e.currentTarget.getAttribute("data-parent")
+          col_id = document.getElementById(card_id).parentElement.id.match("[0-9]+")[0]
+          id = card_id.match("[0-9]+")[0]
+          body = {
+            status: "ok"
+          }
+          response = await request(
+            window.location.pathname + "columns/" + col_id + "/cards/" + id, "DELETE", body
+          )
+          // if response okay then remove
+          document.getElementById(card_id).remove()
         });
         // =========================
         // ADD API CALL TO DELETE CARD IN DB
@@ -112,7 +124,6 @@
           drops.forEach(drop => {
             drop.classList.remove("potential-drop")
           });
-          tidyColumn()
         });
 
       });

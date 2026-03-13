@@ -55,7 +55,7 @@ async function createColumn() {
         response = await request(window.location.pathname + "columns/" + id, "PATCH", body)
     });
 
-    delete_button = createDeleteButton()
+    delete_button = createDeleteButton("column")
     delete_button.setAttribute("data-parent", column.id)
     
     header.append(column_name, delete_button)
@@ -72,12 +72,14 @@ async function createColumn() {
 }
 
 async function createCard(column_id) {
+    column = document.getElementById(column_id)
+    position = column.querySelectorAll(".kanban-card").length
     // SEND API REQUEST
     body = {
-        status: "ok"
+        status: "ok",
+        position: position
     }
     col = column_id.match("[0-9]+")[0]
-    console.log(col)
     response = await request(window.location.pathname + "column/"+ col + "/cards/", "POST", body)
     if (response["status"] != "ok") {
         console.log("Error processing request")
@@ -86,9 +88,10 @@ async function createCard(column_id) {
     }
 
     card = document.createElement("div")
-    card.id = response["card_id"]
+    card.id = "card-" + response["card_id"]
     card.classList.add("kanban-card", "draggable")
     card.draggable = "true"
+    card.setAttribute("data-position", position)
 
     card.addEventListener("dragstart", (event) => {
         // store a ref. on the dragged elem
@@ -111,7 +114,6 @@ async function createCard(column_id) {
         drops.forEach(drop => {
             drop.classList.remove("potential-drop")
         })
-        tidyColumn()
     });
 
     header = document.createElement("div")
@@ -122,7 +124,7 @@ async function createCard(column_id) {
     grab.classList.add("kanban-card-grab")
     grab.textContent = "°°°"
 
-    button = createDeleteButton()
+    button = createDeleteButton("card")
     button.setAttribute("data-parent", card.id)
 
     header.append(grab, button)
@@ -177,17 +179,36 @@ function createCardButton() {
     return button
 }
 
-function createDeleteButton() {
+function createDeleteButton(entity) {
     button = document.createElement("div")
     button.addEventListener("click", async function(e) {
         id = e.currentTarget.getAttribute("data-parent")
-        document.getElementById(id).remove()
-        body = {
-            status: "ok",
-            column_id: id
+        if (entity == "column") {
+            col_id = id.match("[0-9]+")[0]
+            body = {
+                status: "ok"
+            }
+            response = await request(
+                window.location.pathname + "columns/" + col_id,
+                "DELETE",
+                body
+            )
+        } else if (entity == "card") {
+            obj = document.getElementById(id)
+            col_id = obj.parent.id.match("[0-9]+")[0]
+            card_id = id.match("[0-9]+")
+            body = {
+                status: "ok"
+            }
+            response = await request(
+                window.location.pathname + "columns/" + col_id + "/card/" + card_id,
+                "DELETE",
+                body
+            )
         }
-        response = await request(window.location.pathname + "columns/", "DELETE", body)
+        document.getElementById(id).remove()
     })
+
     button.textContent = "×"
     button.classList.add("delete-button", "kanban-button")
     return button
@@ -290,15 +311,35 @@ function generateSlots() {
     });
 }
 
-function tidyColumn() {
+async function tidyColumn() {
+    console.log("tidy column called")
     columns = document.querySelectorAll(".kanban-column")
+    console.log(columns)
 
     columns.forEach(column => {
+        column_id = column.id.match("[0-9]+")[0]
         card_container = document.getElementById(column.id + "-container-cards")
         slots = card_container.querySelectorAll(".kanban-column-slot")
 
         slots.forEach(slot => {
             slot.remove()
         });
+        positions = []
+        i = 0
+        card_container.querySelectorAll(".kanban-card").forEach(card => {
+            card.setAttribute("data-position", i)
+            temp = {
+                id: card.id.match("[0-9]+")[0],
+                position: i
+            }
+            positions.push(temp)
+            i++
+        });
+        body = {
+            status: "ok",
+            positions: positions
+        }
+
+        request(window.location.pathname + "column/" + column_id + "/cards", "PATCH", body)
     });
 }

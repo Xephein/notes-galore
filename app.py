@@ -70,7 +70,7 @@ def board(board_id):
             col["cards"] = cards
         return render_template("board.html", columns=columns)
 
-@app.route("/board/<board_id>/columns/", methods=["POST", "DELETE"])
+@app.route("/board/<board_id>/columns/", methods=["POST"])
 def columns(board_id):
     if request.method == "POST":
         data = request.get_json()
@@ -96,65 +96,100 @@ def columns(board_id):
             "column_id": column_id["result"]
         }
         return response
-    elif request.method == "DELETE":
-        data = request.get_json()
-        if data["status"] != "ok":
-            return {
-                "status": "error",
-                "msg": "Error in request status."
-            }
 
-        column_id = data["column_id"]
-        sql_delete("columns", column_id, True)
 
-        response = {
-            "status": "ok"
-        }
-        return response
-
-@app.route("/board/<board_id>/columns/<column_id>/", methods=["PATCH"])
+@app.route("/board/<board_id>/columns/<column_id>/", methods=["PATCH", "DELETE"])
 def column(board_id, column_id):
     if request.method == "PATCH":
         data = request.get_json()
         if data["status"] != "ok":
-            return {
+            return jsonify({
                 "status": "error",
                 "msg": "Error in request status."
-            }
+            })
         col_id = sql_update("columns", column_id, "title", data["title"], autocommit=True)
         
         if col_id["status"] != "ok":
-            return {
+            return jsonify({
                 "status": "error",
                 "msg": f"Column update failed: {col_id["msg"]}"
-            }
-        return {
+            })
+        return jsonify({
             "status": "ok",
             "card_id": col_id["result"]
-        }
+        })
+    elif request.method == "DELETE":
+        data = request.get_json()
+        if data["status"] != "ok":
+            return jsonify({
+                "status": "error",
+                "msg": "Error in request status."
+            })
 
-@app.route("/board/<board_id>/column/<column_id>/cards/", methods=["POST"])
+        sql_delete("columns", column_id, True)
+
+        response = jsonify({
+            "status": "ok"
+        })
+        return response
+
+@app.route("/board/<board_id>/column/<column_id>/cards/", methods=["POST", "PATCH"])
 def cards(board_id, column_id):
     if request.method == "POST":
         data = request.get_json()
         if data["status"] != "ok":
-            return {
+            return jsonify({
                 "status": "error",
                 "msg": "Error in request status."
-            }
+            })
         
-        card_id = sql_insert("cards", "column_id", column_id, True)
+        card_id = sql_insert(
+            "cards",
+            ["column_id", "position"],
+            [column_id, data["position"]],
+            True
+        )
         if card_id["status"] != "ok":
-            return {
+            return jsonify({
                 "status": "error",
                 "msg": f"Card insertion failed: {card_id["msg"]}"
-            }
-        response = {
+            })
+        return jsonify({
             "status": "ok",
             "card_id": card_id["result"]
-        }
-        return response
+        })
 
+    elif request.method == "PATCH":
+        data = request.get_json()
+        if data["status"] != "ok":
+            return jsonify({
+                "status": "error",
+                "msg": "Error in request status."
+            })
+        outcome = sql_updatemany("cards", data["positions"], autocommit=True)
+
+        if outcome["status"] != "ok":
+            print(outcome)
+            return jsonify({
+                "status": "error",
+                "msg": "unexpected error occured"
+            })
+        return jsonify({"status": "ok"})
+    
+@app.route("/board/<board_id>/columns/<column_id>/cards/<card_id>", methods=["PATCH", "DELETE"])
+def card(board_id, column_id, card_id):
+    if request.method == "PATCH":
+        pass
+    elif request.method == "DELETE":
+        data = request.get_json()
+        if data["status"] != "ok":
+            return jsonify({
+                "status": "error",
+                "msg": "Error in request status."
+            })
+        sql_delete("cards", card_id, True)
+
+        return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
     app.run(debug=True)
