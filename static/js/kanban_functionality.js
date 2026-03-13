@@ -216,16 +216,12 @@ function createDeleteButton(entity) {
             )
         } else if (entity == "card") {
             obj = document.getElementById(id)
-            col_id = obj.parent.id.match("[0-9]+")[0]
+            col_id = obj.parentElement.id.match("[0-9]+")[0]
             card_id = id.match("[0-9]+")
             body = {
                 status: "ok"
             }
-            response = await request(
-                window.location.pathname + "columns/" + col_id + "/card/" + card_id,
-                "DELETE",
-                body
-            )
+            response = await request(window.location.origin + "/cards/" + card_id, "DELETE",body)
         }
         document.getElementById(id).remove()
     })
