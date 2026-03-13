@@ -176,10 +176,28 @@ def cards(board_id, column_id):
             })
         return jsonify({"status": "ok"})
     
-@app.route("/board/<board_id>/columns/<column_id>/cards/<card_id>", methods=["PATCH", "DELETE"])
-def card(board_id, column_id, card_id):
+@app.route("/cards/<card_id>", methods=["PATCH", "DELETE"])
+def card(card_id):
     if request.method == "PATCH":
-        pass
+        data = request.get_json()
+        if data["status"] != "ok":
+            return jsonify({
+                "status": "error",
+                "msg": "Error in request status."
+            })
+        data.pop("status")
+        print(data)
+
+        outcome = sql_update("cards", card_id, list(data.keys()), list(data.values()), autocommit=True)
+
+        if outcome["status"] != "ok":
+            return jsonify({
+                "status": "error",
+                "msg": "Error updating card."
+            })
+        return jsonify({
+            "status": "ok"
+        })
     elif request.method == "DELETE":
         data = request.get_json()
         if data["status"] != "ok":

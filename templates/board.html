@@ -22,9 +22,9 @@
             <div id="col-{{  column['id']  }}-container-cards" class="kanban-container-cards">
               {% for card in column['cards'] %}
               
-                <div id="card-{{ card['id']  }}" class="kanban-card draggable" draggable="true" data-position="{{  card['position']  }}">
+                <div id="card-{{ card['id']  }}" class="kanban-card" draggable="false" data-position="{{  card['position']  }}">
                   <div id="card-{{  card['id']  }}-header" class="kanban-card-header">
-                    <div class="kanban-card-grab">°°°</div>
+                    <div class="kanban-card-grab draggable" draggable="true">°°°</div>
                     <div class="delete-button kanban-button kanban-button-delete-card" data-parent="card-{{  card['id']  }}">×</div>
                   </div>
                   <div id="card-{{  card['id']  }}-title" contenteditable="plaintext-only" class="kanban-card-title editable" data-placeholder="Title...">{{  card['title']  }}</div>
@@ -45,22 +45,48 @@
       // =========================
       // ADD API CALL 
       // SCRIPT FOR UPDATING CARD TITLE AND TEXT
+      query = document.querySelectorAll(".kanban-card-title")
+      query.forEach(field => {
+        field.addEventListener("blur", async function(e) {
+          id = e.target.id.match("[0-9]+")[0]
+          card = document.getElementById("card-" + id)
+          col_id = card.parentElement.id.match("[0-9]+")[0]
+          body = {
+            status: "ok",
+            title: e.target.textContent
+          }
+          response = await request(window.location.origin + "/cards/" + id, "PATCH", body)
+        });
+      });
+
+      query = document.querySelectorAll(".kanban-card-text")
+      query.forEach(field => {
+        field.addEventListener("blur", async function(e) {
+          id = e.target.id.match("[0-9]+")[0]
+          card = document.getElementById("card-" + id)
+          col_id = card.parentElement.id.match("[0-9]+")[0]
+          body = {
+            status: "ok",
+            content: e.target.textContent
+          }
+          response = await request(window.location.origin + "/cards/" + id, "PATCH", body)
+        });
+      });
+
+      // =========================
+      // ADD API CALL 
+      // SCRIPT FOR UPDATING COLUMN TITLE
       query = document.querySelectorAll(".kanban-column-name")
       query.forEach(field => {
         field.addEventListener("blur", async function(e) {
           id = e.target.id.match("[0-9]+")[0]
           body = {
             status: "ok",
-            title: e.target.innerHTML
+            title: e.target.textContent
           }
           response = await request(window.location.pathname + "columns/" + id, "PATCH", body)
         });
       });
-
-
-      // =========================
-      // ADD API CALL 
-      // SCRIPT FOR UPDATING COLUMN TITLE
 
       // SCRIPT FOR DELETING COLUMNS
       query = document.querySelectorAll(".kanban-button-delete-column")
@@ -89,22 +115,19 @@
           body = {
             status: "ok"
           }
-          response = await request(
-            window.location.pathname + "columns/" + col_id + "/cards/" + id, "DELETE", body
-          )
+          response = await request(window.location.origin + "/cards/" + id, "DELETE", body)
           // if response okay then remove
           document.getElementById(card_id).remove()
         });
-        // =========================
-        // ADD API CALL TO DELETE CARD IN DB
       });
 
 
       // SCRIPT FOR MAKING CARDS DRAGGABLE
-      query = document.querySelectorAll(".kanban-card")
-      query.forEach(card => {
-        card.addEventListener("dragstart", (event) => {
-          dragged = event.target;
+      query = document.querySelectorAll(".kanban-card-grab")
+      query.forEach(grab => {
+        grab.addEventListener("dragstart", (event) => {
+          card = event.target.parentElement.parentElement;
+          dragged = card
 
           event.target.classList.add("dragging");
 
@@ -116,7 +139,7 @@
           });
         });
 
-        card.addEventListener("dragend", (event) => {
+        grab.addEventListener("dragend", (event) => {
 
           event.target.classList.remove("dragging")
             
@@ -124,6 +147,7 @@
           drops.forEach(drop => {
             drop.classList.remove("potential-drop")
           });
+          tidyColumn()
         });
 
       });

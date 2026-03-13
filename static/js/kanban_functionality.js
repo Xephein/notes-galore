@@ -89,13 +89,22 @@ async function createCard(column_id) {
 
     card = document.createElement("div")
     card.id = "card-" + response["card_id"]
-    card.classList.add("kanban-card", "draggable")
-    card.draggable = "true"
+    card.classList.add("kanban-card")
     card.setAttribute("data-position", position)
+    card.draggable = false
 
-    card.addEventListener("dragstart", (event) => {
+    header = document.createElement("div")
+    header.id = card.id + "-header"
+    header.classList.add("kanban-card-header")
+
+    grab = document.createElement("div")
+    grab.classList.add("kanban-card-grab", "draggable")
+    grab.textContent = "°°°"
+    grab.draggable = true
+
+    grab.addEventListener("dragstart", (event) => {
         // store a ref. on the dragged elem
-        dragged = event.target;
+        dragged = card;
         // make it half transparent
         event.target.classList.add("dragging");
 
@@ -107,22 +116,15 @@ async function createCard(column_id) {
         })
     });
 
-    card.addEventListener("dragend", (event) => {
+    grab.addEventListener("dragend", (event) => {
         event.target.classList.remove("dragging")
         
         drops = document.querySelectorAll(".dropzone")
         drops.forEach(drop => {
             drop.classList.remove("potential-drop")
         })
+        tidyColumn()
     });
-
-    header = document.createElement("div")
-    header.id = card.id + "-header"
-    header.classList.add("kanban-card-header")
-
-    grab = document.createElement("div")
-    grab.classList.add("kanban-card-grab")
-    grab.textContent = "°°°"
 
     button = createDeleteButton("card")
     button.setAttribute("data-parent", card.id)
@@ -136,7 +138,16 @@ async function createCard(column_id) {
     card_title.setAttribute("data-placeholder", "Title...")
     // ===============
     // ADD EVENT LISTENER TO UPDATE TITLE VIA API CALL
-    card.title.addEventListener
+    card_title.addEventListener("blur", async function(e) {
+        id = e.target.id.match("[0-9]+")[0]
+        card = document.getElementById("card-" + id)
+        col_id = card.parentElement.id.match("[0-9]+")[0]
+        body = {
+            status: "ok",
+            title: e.target.textContent
+        }
+        response = await request(window.location.origin + "/cards/" + id, "PATCH", body)
+    });
 
     card_text = document.createElement("div")
     card_text.contentEditable = "plaintext-only"
@@ -145,6 +156,16 @@ async function createCard(column_id) {
     card_text.setAttribute("data-placeholder", "Type text here...")
     // ===============
     // ADD EVENT LISTENER TO UPDATE TEXT VIA API CALL
+    card_text.addEventListener("blur", async function(e) {
+        id = e.target.id.match("[0-9]+")[0]
+        card = document.getElementById("card-" + id)
+        col_id = card.parentElement.id.match("[0-9]+")[0]
+        body = {
+            status: "ok",
+            content: e.target.textContent
+        }
+        response = await request(window.location.origin + "/cards/" + id, "PATCH", body)
+    });
     
     card.append(header, card_title, card_text)
     return { card, card_title }
@@ -233,19 +254,26 @@ function makeDropZone(elem) {
         // move dragged element to the selected drop target
         if (event.target.classList.contains("dropzone")) {
             event.target.classList.remove("dragover");
-            parent_id = event.target.getAttribute("data-parent")
+            col_id = event.target.getAttribute("data-parent")
             index = event.target.getAttribute("data-index")
-            parent = document.getElementById(parent_id + "-container-cards")
-
+            parent = document.getElementById(col_id + "-container-cards")
+            
             parent.appendChild(dragged)
             children = parent.querySelectorAll(".kanban-card")
-
+            card_id = dragged.id.match("[0-9]+")
             new_children = []
 
             children.forEach(child => {
                 console.log("removing", child)
                 child.remove()
             });
+
+            body = {
+                status: "ok",
+                column_id: col_id.match("[0-9]+")[0]
+            }
+
+            request(window.location.origin + "/cards/" + card_id, "PATCH", body)
 
             for (i = 0; i <= children.length; i++) {
                 if (i == index) {
@@ -262,7 +290,7 @@ function makeDropZone(elem) {
                 parent.appendChild(child)
             })
 
-            tidyColumn()
+            tidyColumn(update=true)
           // =========================
           // NEED TO ADD API REQUEST TO UPDATE PARENT COLUMN ID
           // dragged HAS ACCESS TO CARD ID AND COLUMN ID PRESENT IN DROPZONE
@@ -272,7 +300,7 @@ function makeDropZone(elem) {
     elem.addEventListener("dragleave", (event) => {
         // reset background of potential drop target when the draggable element leaves it
         if (event.target.classList.contains("dropzone")) {
-        event.target.classList.remove("dragover");
+            event.target.classList.remove("dragover");
         }
     });
 
@@ -311,7 +339,7 @@ function generateSlots() {
     });
 }
 
-async function tidyColumn() {
+async function tidyColumn(update=false) {
     console.log("tidy column called")
     columns = document.querySelectorAll(".kanban-column")
     console.log(columns)
@@ -333,13 +361,14 @@ async function tidyColumn() {
                 position: i
             }
             positions.push(temp)
-            i++
+            ++i
         });
         body = {
             status: "ok",
             positions: positions
         }
-
-        request(window.location.pathname + "column/" + column_id + "/cards", "PATCH", body)
+        if (update) {
+            request(window.location.pathname + "column/" + column_id + "/cards", "PATCH", body)
+        }
     });
 }

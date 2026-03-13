@@ -107,6 +107,7 @@ def sql_update(table, row_id, columns, values, autocommit=False, cur=None):
     SET {",".join([column + " = ?" for column in columns])}
     WHERE id = ?"""
 
+    print(query)
     if cur:
         cursor = cur
     else:
