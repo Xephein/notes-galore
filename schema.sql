@@ -1,0 +1,34 @@
+DROP TABLE IF EXISTS cards;
+DROP TABLE IF EXISTS columns;
+DROP TABLE IF EXISTS boards;
+
+CREATE TABLE boards (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT 1
+);
+
+
+CREATE TABLE columns (
+    id INTEGER PRIMARY KEY,
+    board_id INTEGER NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    active BOOLEAN NOT NULL DEFAULT 1,
+    position INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (board_id) REFERENCES boards(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE cards (
+    id INTEGER PRIMARY KEY,
+    column_id INTEGER NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    active BOOLEAN NOT NULL DEFAULT 1,
+    position INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (column_id) REFERENCES columns(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);

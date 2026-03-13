@@ -1,23 +1,50 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kanban Board</title>
-    <link rel="stylesheet" href="./style/index.css">
-    <script src="./script/kanban_functionality.js"></script>
-    <script src="./script/test.js"></script>
-  </head>
+{% extends "layout.html" %}
 
-  <body>
-    <div id="kanban-board" name="board" class="kanban-board">
+{% block content %}
+  <h1>Welcome to Notes Galore</h1>
 
-      <div id="kanban-container-columns" name="columns" class="kanban-container-columns"></div>
+  
+  <div>
+    {% if boards %}
+      <p>Want to create a new board? Look here: </p>
+
+      <form id="form-create-kanban-board">
+        <div id="form-field-name" contenteditable="plaintext-only" class="input-div" data-placeholder="Enter board name..."></div>
+        <div id="form-button-submit" class="add-button kanban-button">Create</div>
+      </form>
+
+      <p>Here are the available boards: </p>
+      <ul>
+        {% for board in boards %}
+          <li><a href="{{  board[board_link] }}"></a>{{  board[board_name]  }}</a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Looks like there are no boards available.</p>
+      <p>Create one here: </p>
+      <form id="form-create-kanban-board">
+        <div id="form-field-name" contenteditable="plaintext-only" class="input-div" data-placeholder="Enter board name..."></div>
+        <div id="form-button-submit" class="add-button kanban-button">Create</div>
+      </form>
+    {% endif %}
+  </div>
+
+  <script>
+    button = document.getElementById("form-button-submit")
+    button.addEventListener("click", async (event) => {
+      name = document.getElementById("form-field-name").textContent
+      if (name == "") {
+        console.log("ERROR! Please provide name for kanban-board")
+        return
+      };
+      body = {
+        boardname: name
+      }
+      response = await request("/boards", "POST", body, wait=false)
+      if (response.redirect) {
+        window.location.href = response.redirect
+      }
       
-      <div id="kanban-new-column" name="new-column">
-        <button onclick="addColumn()" class="add-button">+</button>
-      </div>
-      
-    </div>
-  </body>
-</html>
+    })
+  </script>
+{% endblock %}
