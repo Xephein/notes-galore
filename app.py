@@ -24,6 +24,9 @@ def index():
         ["id, title"], 
         where
     )["result"]
+    for board in boards:
+        board["board_link"] = url_for('board', board_id=board["id"])
+    print(boards)
     return render_template("index.html", boards=boards)
 
 @app.route("/boards/", methods=["POST"])

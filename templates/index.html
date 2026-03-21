@@ -6,6 +6,13 @@
   
   <div>
     {% if boards %}
+    <p>Here are the available boards: </p>
+      <ul>
+        {% for board in boards %}
+          <li><a href="{{  board['board_link'] }}">{{  board['title']  }}</a></li>
+        {% endfor %}
+      </ul>
+      
       <p>Want to create a new board? Look here: </p>
 
       <form id="form-create-kanban-board">
@@ -13,12 +20,7 @@
         <div id="form-button-submit" class="add-button kanban-button">Create</div>
       </form>
 
-      <p>Here are the available boards: </p>
-      <ul>
-        {% for board in boards %}
-          <li><a href="{{  board[board_link] }}"></a>{{  board[board_name]  }}</a></li>
-        {% endfor %}
-      </ul>
+      
     {% else %}
       <p>Looks like there are no boards available.</p>
       <p>Create one here: </p>
